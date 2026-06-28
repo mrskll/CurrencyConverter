@@ -1,19 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
 
 namespace CurrencyConverter
 {
     public partial class Form1 : Form
     {
+        private Dictionary<string, decimal> exchangeRates = new Dictionary<string, decimal>();
+        private readonly HttpClient httpClient = new HttpClient();
+        private bool isRatesLoaded = false;
+
         public Form1()
         {
             InitializeComponent();
             InitializeUI();
+            LoadExchangeRates();
         }
 
         private void InitializeUI()
         {
-            // Настройки формы
             this.Text = "💱 Конвертер валют";
             this.Size = new System.Drawing.Size(450, 300);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -76,7 +83,18 @@ namespace CurrencyConverter
             cmbTo.Items.AddRange(new object[] { "RUB", "USD", "EUR", "GBP", "CNY" });
             cmbTo.SelectedIndex = 1;
 
-            // Кнопка "Конвертировать"
+            // Метка для результата (СНАЧАЛА создаём её)
+            Label lblResult = new Label()
+            {
+                Name = "lblResult",
+                Text = "Результат: --",
+                Font = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.DarkGreen,
+                Location = new System.Drawing.Point(30, 200),
+                AutoSize = true
+            };
+
+            // Кнопка "Конвертировать" (ТЕПЕРЬ используем lblResult)
             Button btnConvert = new Button()
             {
                 Text = "🔄 Конвертировать",
@@ -87,18 +105,11 @@ namespace CurrencyConverter
             };
             btnConvert.Click += (sender, e) =>
             {
-                MessageBox.Show("Пока ничего не работает :)");
-            };
-
-            // Метка для результата
-            Label lblResult = new Label()
-            {
-                Name = "lblResult",
-                Text = "Результат: --",
-                Font = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold),
-                ForeColor = System.Drawing.Color.DarkGreen,
-                Location = new System.Drawing.Point(30, 200),
-                AutoSize = true
+                // Используем lblResult из внешней области
+                if (isRatesLoaded)
+                    lblResult.Text = "✅ Курсы загружены!";
+                else
+                    lblResult.Text = "⏳ Курсы ещё загружаются...";
             };
 
             // Добавляем все элементы на форму
@@ -110,6 +121,32 @@ namespace CurrencyConverter
             this.Controls.Add(cmbTo);
             this.Controls.Add(btnConvert);
             this.Controls.Add(lblResult);
+        }
+
+        private async void LoadExchangeRates()
+        {
+            try
+            {
+                string url = "https://api.exchangerate-api.com/v4/latest/RUB";
+                HttpResponseMessage response = await httpClient.GetAsync(url);
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                JObject data = JObject.Parse(jsonResponse);
+                JObject rates = (JObject)data["rates"];
+
+                exchangeRates.Clear();
+                foreach (var rate in rates)
+                {
+                    exchangeRates[rate.Key] = (decimal)rate.Value;
+                }
+
+                isRatesLoaded = true;
+                MessageBox.Show("✅ Курсы валют успешно загружены!", "Успех");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Ошибка загрузки курсов: {ex.Message}", "Ошибка");
+            }
         }
     }
 }
