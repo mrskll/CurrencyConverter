@@ -22,7 +22,7 @@ namespace CurrencyConverter
         private void InitializeUI()
         {
             this.Text = "💱 Конвертер валют";
-            this.Size = new System.Drawing.Size(450, 300);
+            this.Size = new System.Drawing.Size(450, 350);
             this.StartPosition = FormStartPosition.CenterScreen;
 
             // Метка "Сумма:"
@@ -83,7 +83,7 @@ namespace CurrencyConverter
             cmbTo.Items.AddRange(new object[] { "RUB", "USD", "EUR", "GBP", "CNY" });
             cmbTo.SelectedIndex = 1;
 
-            // Метка для результата (СНАЧАЛА создаём её)
+            // Метка для результата
             Label lblResult = new Label()
             {
                 Name = "lblResult",
@@ -94,7 +94,7 @@ namespace CurrencyConverter
                 AutoSize = true
             };
 
-            // Кнопка "Конвертировать" (ТЕПЕРЬ используем lblResult)
+            // Кнопка "Конвертировать" с ПОЛНОЙ ЛОГИКОЙ
             Button btnConvert = new Button()
             {
                 Text = "🔄 Конвертировать",
@@ -105,11 +105,7 @@ namespace CurrencyConverter
             };
             btnConvert.Click += (sender, e) =>
             {
-                // Используем lblResult из внешней области
-                if (isRatesLoaded)
-                    lblResult.Text = "✅ Курсы загружены!";
-                else
-                    lblResult.Text = "⏳ Курсы ещё загружаются...";
+                ConvertCurrency(txtAmount, cmbFrom, cmbTo, lblResult);
             };
 
             // Добавляем все элементы на форму
@@ -123,6 +119,7 @@ namespace CurrencyConverter
             this.Controls.Add(lblResult);
         }
 
+        // 📡 Загрузка курсов из API
         private async void LoadExchangeRates()
         {
             try
@@ -147,6 +144,46 @@ namespace CurrencyConverter
             {
                 MessageBox.Show($"❌ Ошибка загрузки курсов: {ex.Message}", "Ошибка");
             }
+        }
+
+        // 🧮 НОВЫЙ МЕТОД: логика конвертации
+        private void ConvertCurrency(TextBox txtAmount, ComboBox cmbFrom, ComboBox cmbTo, Label lblResult)
+        {
+            // Проверка: загружены ли курсы?
+            if (!isRatesLoaded || exchangeRates.Count == 0)
+            {
+                lblResult.Text = "⏳ Подождите, курсы загружаются...";
+                lblResult.ForeColor = System.Drawing.Color.Orange;
+                return;
+            }
+
+            // Проверка: введено ли число?
+            if (!decimal.TryParse(txtAmount.Text, out decimal amount))
+            {
+                lblResult.Text = "❌ Ошибка: введите число!";
+                lblResult.ForeColor = System.Drawing.Color.Red;
+                return;
+            }
+
+            // Проверка: существуют ли такие валюты?
+            string fromCurrency = cmbFrom.SelectedItem.ToString();
+            string toCurrency = cmbTo.SelectedItem.ToString();
+
+            if (!exchangeRates.ContainsKey(fromCurrency) || !exchangeRates.ContainsKey(toCurrency))
+            {
+                lblResult.Text = "❌ Ошибка: валюта не найдена";
+                lblResult.ForeColor = System.Drawing.Color.Red;
+                return;
+            }
+
+            // Конвертация
+            decimal fromRate = exchangeRates[fromCurrency];
+            decimal toRate = exchangeRates[toCurrency];
+            decimal result = amount / fromRate * toRate;
+
+            // Вывод результата
+            lblResult.Text = $"💵 Результат: {result:F2} {toCurrency}";
+            lblResult.ForeColor = System.Drawing.Color.DarkGreen;
         }
     }
 }
