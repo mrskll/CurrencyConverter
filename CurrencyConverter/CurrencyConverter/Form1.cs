@@ -4,6 +4,8 @@ using System.Net.Http;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
+// Это ветка develop
+
 namespace CurrencyConverter
 {
     public partial class Form1 : Form
