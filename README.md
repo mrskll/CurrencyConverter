@@ -15,7 +15,7 @@
 - Графический интерфейс WinForms
 
 ## Скриншоты
-
+<img width="600" height="480" alt="Снимок экрана 2026-06-29 024117" src="https://github.com/user-attachments/assets/884479a8-8b77-4ea0-b380-874562bca314" />
 
 ## Автор
 Maria Sokolova
